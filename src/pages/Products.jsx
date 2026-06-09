@@ -70,9 +70,9 @@ const Products = () => {
       });
 
       if (err.response?.status === 404) {
-        setError('Products endpoint not found. Please check backend is running on http://localhost:5000');
+        setError(`Products endpoint not found. Please check backend is running on \${process.env.REACT_APP_BACKEND_URL}`);
       } else if (err.code === 'ERR_NETWORK') {
-        setError('Cannot connect to backend server. Make sure it\'s running on http://localhost:5000');
+        setError(`Cannot connect to backend server. Make sure it's running on \${process.env.REACT_APP_BACKEND_URL}`);
       } else {
         setError(`Failed to load products: ${err.message}`);
       }

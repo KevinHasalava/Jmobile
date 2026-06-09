@@ -21,7 +21,7 @@ export const SocketProvider = ({ children }) => {
   useEffect(() => {
     if (token && user) {
       // Initialize socket connection
-      const newSocket = io('http://localhost:5000', {
+      const newSocket = io(`\${process.env.REACT_APP_BACKEND_URL}`, {
         auth: { token }
       });
 

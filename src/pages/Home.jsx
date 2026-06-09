@@ -14,7 +14,7 @@ const Home = () => {
   const fetchFeaturedProducts = async () => {
     try {
       setLoading(true);
-      const response = await axios.get('http://localhost:5000/api/products?limit=8');
+      const response = await axios.get(`\${process.env.REACT_APP_API_URL}/products?limit=8`);
       
       if (response.data.success) {
         // Get first 8 products or products with highest rating

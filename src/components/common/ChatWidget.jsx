@@ -76,7 +76,7 @@ const ChatWidget = () => {
     try {
       setLoading(true);
       const response = await axios.post(
-        'http://localhost:5000/api/chat/conversation',
+        `\${process.env.REACT_APP_API_URL}/chat/conversation`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -92,7 +92,7 @@ const ChatWidget = () => {
   const fetchMessages = async (conversationId) => {
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/chat/messages/${conversationId}`,
+        `${process.env.REACT_APP_API_URL}/chat/messages/${conversationId}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
       setMessages(response.data.data);
@@ -118,7 +118,7 @@ const ChatWidget = () => {
 
       try {
         const uploadResponse = await axios.post(
-          'http://localhost:5000/api/upload/product',
+          `\${process.env.REACT_APP_API_URL}/upload/product`,
           formData,
           {
             headers: {
@@ -129,7 +129,7 @@ const ChatWidget = () => {
         );
 
         if (uploadResponse.data.data.images && uploadResponse.data.data.images.length > 0) {
-          imageUrl = `http://localhost:5000${uploadResponse.data.data.images[0].path}`;
+          imageUrl = `${process.env.REACT_APP_BACKEND_URL}${uploadResponse.data.data.images[0].path}`;
         }
       } catch (error) {
         console.error('Error uploading image:', error);

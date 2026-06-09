@@ -22,7 +22,7 @@ const ResetPassword = () => {
 
     setLoading(true);
     try {
-      const response = await fetch(`http://localhost:5000/api/users/resetpassword/${userId}/${token}`, {
+      const response = await fetch(`${process.env.REACT_APP_API_URL}/users/resetpassword/${userId}/${token}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ password }),

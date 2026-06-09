@@ -63,8 +63,8 @@ const AdminProducts = () => {
   const fetchBrandsAndCategories = async () => {
     try {
       const [brandsResponse, categoriesResponse] = await Promise.all([
-        axios.get('http://localhost:5000/api/brands'),
-        axios.get('http://localhost:5000/api/categories')
+        axios.get(`\${process.env.REACT_APP_API_URL}/brands`),
+        axios.get(`\${process.env.REACT_APP_API_URL}/categories`)
       ]);
 
       setFilters({
@@ -86,7 +86,7 @@ const AdminProducts = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5000/api/brands',
+        `\${process.env.REACT_APP_API_URL}/brands`,
         { name: newBrandName.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -117,7 +117,7 @@ const AdminProducts = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        'http://localhost:5000/api/categories',
+        `\${process.env.REACT_APP_API_URL}/categories`,
         { name: newCategoryName.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -151,7 +151,7 @@ const AdminProducts = () => {
       if (selectedCategory) params.append('category', selectedCategory);
 
       const response = await axios.get(
-        `http://localhost:5000/api/admin/products?${params}`,
+        `${process.env.REACT_APP_API_URL}/admin/products?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -193,7 +193,7 @@ const AdminProducts = () => {
         }
 
         const uploadResponse = await axios.post(
-          'http://localhost:5000/api/upload/product',
+          `\${process.env.REACT_APP_API_URL}/upload/product`,
           uploadFormData,
           {
             headers: {
@@ -206,14 +206,14 @@ const AdminProducts = () => {
         // Add new uploaded image paths
         if (uploadResponse.data.data.images && uploadResponse.data.data.images.length > 0) {
           const newImagePaths = uploadResponse.data.data.images.map(img => 
-            `http://localhost:5000${img.path}`
+            `${process.env.REACT_APP_BACKEND_URL}${img.path}`
           );
           uploadedImages = [...uploadedImages, ...newImagePaths];
         }
 
         // Set video path
         if (uploadResponse.data.data.video) {
-          uploadedVideo = `http://localhost:5000${uploadResponse.data.data.video.path}`;
+          uploadedVideo = `${process.env.REACT_APP_BACKEND_URL}${uploadResponse.data.data.video.path}`;
         }
       }
 
@@ -229,14 +229,14 @@ const AdminProducts = () => {
 
       if (editingProduct) {
         await axios.put(
-          `http://localhost:5000/api/admin/products/${editingProduct._id}`,
+          `${process.env.REACT_APP_API_URL}/admin/products/${editingProduct._id}`,
           productData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         toast.success('Product updated successfully!');
       } else {
         await axios.post(
-          'http://localhost:5000/api/admin/products',
+          `\${process.env.REACT_APP_API_URL}/admin/products`,
           productData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -324,7 +324,7 @@ const AdminProducts = () => {
               toast.dismiss(t.id);
               const deletePromise = (async () => {
                 const token = localStorage.getItem('token');
-                await axios.delete(`http://localhost:5000/api/admin/products/${id}`, {
+                await axios.delete(`${process.env.REACT_APP_API_URL}/admin/products/${id}`, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
                 await fetchProducts();

@@ -23,7 +23,7 @@ const AdminUsers = () => {
       if (searchTerm) params.append('search', searchTerm);
 
       const response = await axios.get(
-        `http://localhost:5000/api/admin/users?${params}`,
+        `${process.env.REACT_APP_API_URL}/admin/users?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -44,7 +44,7 @@ const AdminUsers = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/users/${userId}/block`,
+        `${process.env.REACT_APP_API_URL}/admin/users/${userId}/block`,
         {},
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -62,7 +62,7 @@ const AdminUsers = () => {
 
     try {
       const token = localStorage.getItem('token');
-      await axios.delete(`http://localhost:5000/api/admin/users/${userId}`, {
+      await axios.delete(`${process.env.REACT_APP_API_URL}/admin/users/${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       fetchUsers();

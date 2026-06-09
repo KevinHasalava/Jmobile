@@ -26,7 +26,7 @@ const AdminOrders = () => {
       if (statusFilter) params.append('status', statusFilter);
 
       const response = await axios.get(
-        `http://localhost:5000/api/admin/orders?${params}`,
+        `${process.env.REACT_APP_API_URL}/admin/orders?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -47,7 +47,7 @@ const AdminOrders = () => {
     try {
       const token = localStorage.getItem('token');
       await axios.put(
-        `http://localhost:5000/api/admin/orders/${orderId}/status`,
+        `${process.env.REACT_APP_API_URL}/admin/orders/${orderId}/status`,
         { orderStatus, paymentStatus },
         { headers: { Authorization: `Bearer ${token}` } }
       );
