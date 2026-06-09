@@ -2,16 +2,23 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Create uploads directory if it doesn't exist
-const uploadDir = path.join(__dirname, '../uploads');
-const productImagesDir = path.join(uploadDir, 'products/images');
-const productVideosDir = path.join(uploadDir, 'products/videos');
+// Use /tmp for Vercel read-only filesystem, otherwise use local uploads folder
+const isVercel = process.env.VERCEL === '1';
+const uploadDir = isVercel ? '/tmp' : path.join(__dirname, '../uploads');
+const productImagesDir = isVercel ? '/tmp' : path.join(uploadDir, 'products/images');
+const productVideosDir = isVercel ? '/tmp' : path.join(uploadDir, 'products/videos');
 
-[productImagesDir, productVideosDir].forEach(dir => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
+try {
+  if (!isVercel) {
+    [productImagesDir, productVideosDir].forEach(dir => {
+      if (!fs.existsSync(dir)) {
+        fs.mkdirSync(dir, { recursive: true });
+      }
+    });
   }
-});
+} catch (error) {
+  console.warn('Could not create upload directories. Local uploads may fail.', error.message);
+}
 
 // Storage configuration for product images
 const imageStorage = multer.diskStorage({
