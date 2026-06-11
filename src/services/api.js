@@ -3,7 +3,7 @@ import axios from 'axios';
 // Bulletproof Monorepo Setup:
 // In Vercel production, forcefully use the relative '/api' route to hit serverless functions.
 // This prevents old Vercel Environment Variables (REACT_APP_API_URL) from breaking the app.
-const API_BASE_URL = process.env.NODE_ENV === 'production' 
+export const API_BASE_URL = process.env.NODE_ENV === 'production' 
   ? '/api' 
   : (process.env.REACT_APP_API_URL || 'http://localhost:5000/api');
 

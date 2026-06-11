@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import AdminLayout from '../../components/admin/AdminLayout';
 import axios from 'axios';
+import { API_BASE_URL } from '../../services/api';
 import toast from 'react-hot-toast';
 import { formatRupees } from '../../utils/currency';
 
@@ -64,8 +65,8 @@ const AdminProducts = () => {
   const fetchBrandsAndCategories = async () => {
     try {
       const [brandsResponse, categoriesResponse] = await Promise.all([
-        axios.get(`\${process.env.REACT_APP_API_URL}/brands`),
-        axios.get(`\${process.env.REACT_APP_API_URL}/categories`)
+        axios.get(`\${API_BASE_URL}/brands`),
+        axios.get(`\${API_BASE_URL}/categories`)
       ]);
 
       setFilters({
@@ -87,7 +88,7 @@ const AdminProducts = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `\${process.env.REACT_APP_API_URL}/brands`,
+        `\${API_BASE_URL}/brands`,
         { name: newBrandName.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -118,7 +119,7 @@ const AdminProducts = () => {
     try {
       const token = localStorage.getItem('token');
       const response = await axios.post(
-        `\${process.env.REACT_APP_API_URL}/categories`,
+        `\${API_BASE_URL}/categories`,
         { name: newCategoryName.trim() },
         { headers: { Authorization: `Bearer ${token}` } }
       );
@@ -152,7 +153,7 @@ const AdminProducts = () => {
       if (selectedCategory) params.append('category', selectedCategory);
 
       const response = await axios.get(
-        `${process.env.REACT_APP_API_URL}/admin/products?${params}`,
+        `${API_BASE_URL}/admin/products?${params}`,
         { headers: { Authorization: `Bearer ${token}` } }
       );
 
@@ -194,7 +195,7 @@ const AdminProducts = () => {
         }
 
         const uploadResponse = await axios.post(
-          `\${process.env.REACT_APP_API_URL}/upload/product`,
+          `\${API_BASE_URL}/upload/product`,
           uploadFormData,
           {
             headers: {
@@ -230,14 +231,14 @@ const AdminProducts = () => {
 
       if (editingProduct) {
         await axios.put(
-          `${process.env.REACT_APP_API_URL}/admin/products/${editingProduct._id}`,
+          `${API_BASE_URL}/admin/products/${editingProduct._id}`,
           productData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
         toast.success('Product updated successfully!');
       } else {
         await axios.post(
-          `\${process.env.REACT_APP_API_URL}/admin/products`,
+          `\${API_BASE_URL}/admin/products`,
           productData,
           { headers: { Authorization: `Bearer ${token}` } }
         );
@@ -325,7 +326,7 @@ const AdminProducts = () => {
               toast.dismiss(t.id);
               const deletePromise = (async () => {
                 const token = localStorage.getItem('token');
-                await axios.delete(`${process.env.REACT_APP_API_URL}/admin/products/${id}`, {
+                await axios.delete(`${API_BASE_URL}/admin/products/${id}`, {
                   headers: { Authorization: `Bearer ${token}` }
                 });
                 await fetchProducts();
