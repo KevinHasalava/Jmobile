@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, useParams, Link } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
 
 const ResetPassword = () => {

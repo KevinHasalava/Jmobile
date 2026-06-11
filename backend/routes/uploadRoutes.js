@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { uploadProductMedia } = require('../middleware/upload');
+const { uploadProductMedia, uploadBankSlip } = require('../middleware/upload');
 const { protect, admin } = require('../middleware/auth');
 const path = require('path');
 const fs = require('fs');
@@ -47,6 +47,38 @@ router.post('/product', protect, admin, (req, res) => {
       success: true,
       message: 'Files uploaded successfully',
       data: uploadedFiles
+    });
+  });
+});
+
+// @desc    Upload bank slip
+// @route   POST /api/upload/bank-slip
+// @access  Private
+router.post('/bank-slip', protect, (req, res) => {
+  uploadBankSlip(req, res, (err) => {
+    if (err) {
+      return res.status(400).json({
+        success: false,
+        message: err.message
+      });
+    }
+
+    if (!req.file) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please upload a bank slip file'
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: 'Bank slip uploaded successfully',
+      data: {
+        filename: req.file.filename,
+        path: `/uploads/bank-slips/${req.file.filename}`,
+        mimetype: req.file.mimetype,
+        size: req.file.size
+      }
     });
   });
 });

@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { convertAndFormatPrice } from '../utils/currency';
+import api, { ordersAPI } from '../services/api';
+import toast from 'react-hot-toast';
 
 const Checkout = () => {
   const navigate = useNavigate();
@@ -94,7 +96,9 @@ const Checkout = () => {
     return Object.keys(newErrors).length === 0;
   };
 
-  const handleSubmit = (e) => {
+  const [loading, setLoading] = useState(false);
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     
     if (cart.length === 0) {
@@ -103,12 +107,71 @@ const Checkout = () => {
     }
 
     if (validateForm()) {
-      // Simulate order placement
-      setOrderPlaced(true);
-      setTimeout(() => {
-        clearCart();
-        navigate('/');
-      }, 3000);
+      setLoading(true);
+      try {
+        // 1. Upload the bank slip
+        const formDataPayload = new FormData();
+        formDataPayload.append('bankSlip', slipImage);
+
+        const uploadRes = await api.post('/upload/bank-slip', formDataPayload, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+        });
+
+        const bankSlipData = uploadRes.data.data; // { filename, path, ... }
+
+        // 2. Prepare the order payload
+        const subtotal = getCartTotal();
+        const shipping = subtotal >= 100 ? 0 : 10;
+        const tax = subtotal * 0.08;
+        const total = subtotal + shipping + tax;
+
+        const orderPayload = {
+          items: cart.map((item) => ({
+            product: item.id || item._id,
+            name: item.name,
+            quantity: item.quantity,
+            price: item.price,
+            image: item.image,
+          })),
+          shippingAddress: {
+            fullName: `${formData.firstName} ${formData.lastName}`,
+            phone: formData.phone,
+            street: formData.address,
+            city: formData.city,
+            state: formData.state,
+            zipCode: formData.zipCode,
+            country: 'Sri Lanka', // default
+          },
+          paymentMethod: 'bank_transfer',
+          itemsPrice: subtotal,
+          taxPrice: tax,
+          shippingPrice: shipping,
+          totalPrice: total,
+          bankSlip: {
+            depositorName: formData.depositorName,
+            transactionId: formData.transactionId,
+            filename: bankSlipData.filename,
+            path: bankSlipData.path,
+          },
+        };
+
+        // 3. Submit the order
+        const res = await ordersAPI.create(orderPayload);
+        
+        if (res.data.success) {
+          setOrderPlaced(true);
+          clearCart();
+          toast.success('Order placed successfully!');
+          setTimeout(() => {
+            navigate('/my-orders');
+          }, 3000);
+        }
+      } catch (err) {
+        console.error('Order error:', err);
+        toast.error(err.response?.data?.message || 'Failed to place order. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     }
   };
 
@@ -437,9 +500,20 @@ const Checkout = () => {
               {/* Submit Button */}
               <button
                 type="submit"
-                className="w-full bg-primary text-white py-3 rounded-lg hover:bg-secondary transition-colors font-semibold mt-6"
+                disabled={loading}
+                className="w-full bg-primary text-white py-3 rounded-lg hover:bg-secondary transition-colors font-semibold mt-6 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
-                Place Order
+                {loading ? (
+                  <>
+                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Processing...
+                  </>
+                ) : (
+                  'Place Order'
+                )}
               </button>
 
               {/* Security */}

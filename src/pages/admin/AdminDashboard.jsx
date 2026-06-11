@@ -7,9 +7,8 @@ const AdminDashboard = () => {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    fetchDashboardStats();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchDashboardStats(); }, []); // fetchDashboardStats omitted intentionally
 
   const fetchDashboardStats = async () => {
     try {

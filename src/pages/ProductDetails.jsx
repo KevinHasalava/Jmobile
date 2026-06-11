@@ -17,10 +17,8 @@ const ProductDetails = () => {
   const [addedToCart, setAddedToCart] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
 
-  // Fetch product details from API
-  useEffect(() => {
-    fetchProductDetails();
-  }, [id]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchProductDetails(); }, [id]); // fetchProductDetails omitted intentionally
 
   const fetchProductDetails = async () => {
     try {

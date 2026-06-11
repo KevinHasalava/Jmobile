@@ -55,9 +55,8 @@ const ProductCard = ({ product }) => {
 
   // Use useCallback to memoize the handler
   const handleViewDetails = useCallback(() => {
-    const productId = product._id || product.id;
     navigate(`/product/${product._id}`);
-  }, [product._id, product.id, navigate]);
+  }, [product._id, navigate]);
 
   // Compute derived values with useMemo to avoid recalculation
   const displayImage = useMemo(() => getImageUrl(product.images?.[0] || product.image), [product.images, product.image]);

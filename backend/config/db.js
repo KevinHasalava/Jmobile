@@ -1,59 +1,74 @@
 const mongoose = require('mongoose');
 
+// ─── Connection cache for serverless environments (Vercel) ───────────────────
+// Vercel spins up a new function instance per request. Without caching,
+// every request creates a NEW MongoDB connection → "Too many connections" error.
+// This module-level cache persists across invocations within the same warm instance.
+let cachedConn = null;
+let cachedPromise = null;
+
 const connectDB = async () => {
-  try {
-    const mongoUri = process.env.MONGO_URI;
-    console.log('\n🔍 MongoDB Connection Attempt:');
-    console.log(`   URI: ${mongoUri}`);
+  const mongoUri = process.env.MONGO_URI;
 
-    const conn = await mongoose.connect(mongoUri, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 10000,
-      socketTimeoutMS: 45000,
-      retryWrites: true,
-      w: 'majority'
-    });
+  // ─── Strict guard: fail fast if MONGO_URI is missing ───
+  if (!mongoUri || mongoUri.trim() === '') {
+    console.error('\n❌ FATAL: MONGO_URI is not defined in environment variables.');
+    console.error('   → For local dev: create backend/.env with MONGO_URI=mongodb+srv://...');
+    console.error('   → For Vercel:    add MONGO_URI in Project Settings → Environment Variables\n');
+    process.exit(1);
+  }
 
-    console.log(`\n✅ MongoDB Connected Successfully!`);
+  // ─── Return cached connection if already connected ───
+  if (cachedConn && mongoose.connection.readyState === 1) {
+    return cachedConn;
+  }
+
+  // ─── Return pending promise if connection is in progress ───
+  if (cachedPromise) {
+    return cachedPromise;
+  }
+
+  // Mask password in logs for security
+  const maskedUri = mongoUri.replace(/\/\/([^:]+):([^@]+)@/, '//$1:****@');
+  console.log('\n🔍 MongoDB Connection Attempt:');
+  console.log(`   URI: ${maskedUri}`);
+
+  cachedPromise = mongoose.connect(mongoUri, {
+    // Connection pool — max 10 concurrent connections
+    maxPoolSize: 10,
+    minPoolSize: 2,
+    // Serverless-friendly: don't buffer commands if not connected
+    bufferCommands: false,
+    // Timeouts
+    serverSelectionTimeoutMS: 10000,
+    connectTimeoutMS: 10000,
+    socketTimeoutMS: 45000,
+  }).then((conn) => {
+    console.log(`\n✅ MongoDB Connected!`);
     console.log(`   Host: ${conn.connection.host}`);
     console.log(`   Database: ${conn.connection.name}`);
-    console.log(`   Ready State: ${conn.connection.readyState} (1=connected)\n`);
-
+    console.log(`   Pool size: ${conn.connection.options?.maxPoolSize || 10}`);
+    cachedConn = conn;
+    cachedPromise = null;
     return conn;
-  } catch (error) {
-    console.error(`\n❌ MongoDB Connection Error\n`);
-    console.error(`   Error: ${error.message}\n`);
-    console.error(`📌 TROUBLESHOOTING STEPS:\n`);
+  }).catch((error) => {
+    console.error(`\n❌ MongoDB Connection Error: ${error.message}\n`);
+    cachedPromise = null;
 
     if (error.message.includes('ECONNREFUSED')) {
-      console.error(`   1️⃣  MongoDB service is NOT running locally`);
-      console.error(`   2️⃣  SOLUTION OPTIONS:\n`);
-      console.error(`       A) Install MongoDB Community Edition:`);
-      console.error(`          - Download: https://www.mongodb.com/try/download/community`);
-      console.error(`          - Run installer with "Install as Windows Service" checked`);
-      console.error(`          - Start service: net start MongoDB (or MongoDB_mnt_3_0)\n`);
-      console.error(`       B) Use MongoDB Atlas (Cloud):`);
-      console.error(`          - Update MONGO_URI in .env with your Atlas connection string`);
-      console.error(`          - Format: mongodb+srv://user:pass@cluster.mongodb.net/dbname\n`);
+      console.error('   → MongoDB is not running locally. Use Atlas or start local MongoDB.');
     } else if (error.message.includes('authentication failed')) {
-      console.error(`   Invalid MongoDB credentials`);
-      console.error(`   - Check username/password in MONGO_URI`);
-      console.error(`   - For local MongoDB, no auth needed: mongodb://localhost:27017/dbname\n`);
+      console.error('   → Invalid credentials. Check MONGO_URI username/password.');
     } else if (error.message.includes('ENOTFOUND')) {
-      console.error(`   - MongoDB cluster address not found (DNS issue)`);
-      console.error(`   - Check your internet connection`);
-      console.error(`   - Verify connection string is correct\n`);
+      console.error('   → Cluster hostname not found. Check your internet connection.');
+    } else if (error.message.includes('timed out')) {
+      console.error('   → Connection timed out. Add 0.0.0.0/0 to MongoDB Atlas IP Whitelist.');
     }
 
-    console.error(`💡 Server will continue running in MOCK MODE`);
-    console.error(`   - API endpoints will use sample data`);
-    console.error(`   - Database operations will NOT work\n`);
+    process.exit(1);
+  });
 
-    // Don't exit - allow server to continue with mock data
-    return null;
-  }
+  return cachedPromise;
 };
 
 module.exports = connectDB;

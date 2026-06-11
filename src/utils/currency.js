@@ -109,7 +109,7 @@ export const getImageUrl = (image) => {
   return '/placeholder.png';
 };
 
-export default {
+const currencyUtils = {
   convertToLKR,
   formatLKR,
   convertAndFormatPrice,
@@ -118,3 +118,5 @@ export default {
   formatRupees,
   getImageUrl,
 };
+
+export default currencyUtils;

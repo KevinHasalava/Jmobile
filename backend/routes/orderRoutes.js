@@ -8,15 +8,18 @@ const {
   updateOrderToPaid,
   updateOrderToDelivered,
   updateOrderStatus,
-  cancelOrder
+  cancelOrder,
+  verifyBankSlip,
 } = require('../controllers/orderController');
 const { protect, admin } = require('../middleware/auth');
+
+// IMPORTANT: '/myorders' must come BEFORE '/:id' to avoid Express
+// treating 'myorders' as an ID parameter
+router.get('/myorders', protect, getMyOrders);
 
 router.route('/')
   .post(protect, createOrder)
   .get(protect, admin, getOrders);
-
-router.get('/myorders', protect, getMyOrders);
 
 router.route('/:id')
   .get(protect, getOrderById)
@@ -25,5 +28,6 @@ router.route('/:id')
 router.put('/:id/pay', protect, updateOrderToPaid);
 router.put('/:id/deliver', protect, admin, updateOrderToDelivered);
 router.put('/:id/status', protect, admin, updateOrderStatus);
+router.put('/:id/verify-slip', protect, admin, verifyBankSlip);
 
 module.exports = router;

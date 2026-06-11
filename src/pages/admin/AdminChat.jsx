@@ -26,9 +26,8 @@ const AdminChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    fetchConversations();
-  }, []);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => { fetchConversations(); }, []); // fetchConversations omitted intentionally
 
   useEffect(() => {
     if (!socket) return;

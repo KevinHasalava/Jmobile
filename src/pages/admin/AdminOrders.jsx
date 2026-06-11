@@ -13,7 +13,8 @@ const AdminOrders = () => {
 
   useEffect(() => {
     fetchOrders();
-  }, [statusFilter, pagination.currentPage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [statusFilter, pagination.currentPage]); // fetchOrders omitted intentionally
 
   const fetchOrders = async () => {
     try {

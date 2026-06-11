@@ -35,7 +35,8 @@ const ChatWidget = () => {
     if (user && token && isOpen && !conversation) {
       fetchConversation();
     }
-  }, [user, token, isOpen]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, token, isOpen]); // fetchConversation and conversation omitted intentionally
 
   // Socket listeners
   useEffect(() => {

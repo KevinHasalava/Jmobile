@@ -53,7 +53,8 @@ export const SocketProvider = ({ children }) => {
       setSocket(null);
       setConnected(false);
     }
-  }, [token, user]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, user]); // 'socket' intentionally omitted: adding it would cause reconnect loop
 
   const value = {
     socket,

@@ -24,6 +24,8 @@ import AdminProducts from './pages/admin/AdminProducts';
 import AdminUsers from './pages/admin/AdminUsers';
 import AdminOrders from './pages/admin/AdminOrders';
 import AdminChat from './pages/admin/AdminChat';
+import AdminInquiries from './pages/admin/AdminInquiries';
+import AdminPayments from './pages/admin/AdminPayments';
 
 // Protected Route Component
 const ProtectedRoute = ({ children, adminOnly = false }) => {
@@ -125,6 +127,22 @@ function App() {
                   element={
                     <ProtectedRoute adminOnly={true}>
                       <AdminChat />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/inquiries"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <AdminInquiries />
+                    </ProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/admin/payments"
+                  element={
+                    <ProtectedRoute adminOnly={true}>
+                      <AdminPayments />
                     </ProtectedRoute>
                   }
                 />

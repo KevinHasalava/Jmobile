@@ -10,7 +10,8 @@ const AdminUsers = () => {
 
   useEffect(() => {
     fetchUsers();
-  }, [searchTerm, pagination.currentPage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm, pagination.currentPage]); // fetchUsers omitted intentionally to avoid circular dep
 
   const fetchUsers = async () => {
     try {

@@ -2,124 +2,128 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-// Use /tmp for Vercel read-only filesystem, otherwise use local uploads folder
+// ─── Directory setup ──────────────────────────────────────────────────────────
+// Vercel has a read-only filesystem — use /tmp on Vercel, local uploads/ in dev
 const isVercel = process.env.VERCEL === '1';
 const uploadDir = isVercel ? '/tmp' : path.join(__dirname, '../uploads');
-const productImagesDir = isVercel ? '/tmp' : path.join(uploadDir, 'products/images');
-const productVideosDir = isVercel ? '/tmp' : path.join(uploadDir, 'products/videos');
+const productImagesDir = isVercel ? '/tmp/products/images' : path.join(uploadDir, 'products/images');
+const productVideosDir = isVercel ? '/tmp/products/videos' : path.join(uploadDir, 'products/videos');
+const bankSlipsDir = isVercel ? '/tmp/bank-slips' : path.join(uploadDir, 'bank-slips');
 
-try {
-  if (!isVercel) {
-    [productImagesDir, productVideosDir].forEach(dir => {
-      if (!fs.existsSync(dir)) {
-        fs.mkdirSync(dir, { recursive: true });
-      }
-    });
-  }
-} catch (error) {
-  console.warn('Could not create upload directories. Local uploads may fail.', error.message);
+// Create directories if they don't exist (local dev only)
+if (!isVercel) {
+  [productImagesDir, productVideosDir, bankSlipsDir].forEach((dir) => {
+    try {
+      if (!fs.existsSync(dir)) fs.mkdirSync(dir, { recursive: true });
+    } catch (e) {
+      console.warn(`Could not create directory ${dir}:`, e.message);
+    }
+  });
 }
 
-// Storage configuration for product images
-const imageStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, productImagesDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'product-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-// Storage configuration for product videos
-const videoStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, productVideosDir);
-  },
-  filename: function (req, file, cb) {
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, 'video-' + uniqueSuffix + path.extname(file.originalname));
-  }
-});
-
-// File filter for images
+// ─── File filters ─────────────────────────────────────────────────────────────
 const imageFileFilter = (req, file, cb) => {
-  const allowedTypes = /jpeg|jpg|png|gif|webp/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = allowedTypes.test(file.mimetype);
-
-  if (extname && mimetype) {
+  const allowed = /jpeg|jpg|png|gif|webp/;
+  if (allowed.test(path.extname(file.originalname).toLowerCase()) && allowed.test(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only image files (jpeg, jpg, png, gif, webp) are allowed!'), false);
+    cb(new Error('Only image files (jpeg, jpg, png, gif, webp) are allowed'), false);
   }
 };
 
-// File filter for videos
 const videoFileFilter = (req, file, cb) => {
-  const allowedTypes = /mp4|avi|mov|wmv|flv|mkv|webm/;
-  const extname = allowedTypes.test(path.extname(file.originalname).toLowerCase());
-  const mimetype = /video/.test(file.mimetype);
-
-  if (extname && mimetype) {
+  const allowedExt = /mp4|avi|mov|wmv|flv|mkv|webm/;
+  if (allowedExt.test(path.extname(file.originalname).toLowerCase()) && /video/.test(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new Error('Only video files (mp4, avi, mov, wmv, flv, mkv, webm) are allowed!'), false);
+    cb(new Error('Only video files (mp4, avi, mov, wmv, flv, mkv, webm) are allowed'), false);
   }
 };
 
-// Multer upload configurations
+// Bank slip: accepts images AND PDF
+const slipFileFilter = (req, file, cb) => {
+  const allowedExt = /jpeg|jpg|png|pdf|webp/;
+  const allowedMime = /image\/(jpeg|jpg|png|webp)|application\/pdf/;
+  if (
+    allowedExt.test(path.extname(file.originalname).toLowerCase()) &&
+    allowedMime.test(file.mimetype)
+  ) {
+    cb(null, true);
+  } else {
+    cb(new Error('Only image files or PDFs are allowed for bank slips'), false);
+  }
+};
+
+// ─── Product image storage ────────────────────────────────────────────────────
+const imageStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, productImagesDir),
+  filename: (req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `product-${unique}${path.extname(file.originalname)}`);
+  },
+});
+
+// ─── Bank slip storage ────────────────────────────────────────────────────────
+const slipStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, bankSlipsDir),
+  filename: (req, file, cb) => {
+    const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+    cb(null, `slip-${unique}${path.extname(file.originalname)}`);
+  },
+});
+
+// ─── Multer instances ─────────────────────────────────────────────────────────
 const uploadProductImages = multer({
   storage: imageStorage,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit per image
-  },
-  fileFilter: imageFileFilter
-}).array('images', 5); // Maximum 5 images
+  limits: { fileSize: 5 * 1024 * 1024 }, // 5 MB
+  fileFilter: imageFileFilter,
+}).array('images', 5);
 
 const uploadProductVideo = multer({
-  storage: videoStorage,
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB limit for video
-  },
-  fileFilter: videoFileFilter
-}).single('video'); // Single video file
+  storage: multer.diskStorage({
+    destination: (req, file, cb) => cb(null, productVideosDir),
+    filename: (req, file, cb) => {
+      const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      cb(null, `video-${unique}${path.extname(file.originalname)}`);
+    },
+  }),
+  limits: { fileSize: 50 * 1024 * 1024 }, // 50 MB
+  fileFilter: videoFileFilter,
+}).single('video');
 
-// Combined upload for both images and video
+// Combined product media (images + optional video)
 const uploadProductMedia = multer({
   storage: multer.diskStorage({
-    destination: function (req, file, cb) {
-      if (file.fieldname === 'images') {
-        cb(null, productImagesDir);
-      } else if (file.fieldname === 'video') {
-        cb(null, productVideosDir);
-      }
+    destination: (req, file, cb) => {
+      cb(null, file.fieldname === 'video' ? productVideosDir : productImagesDir);
     },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-      const prefix = file.fieldname === 'images' ? 'product-' : 'video-';
-      cb(null, prefix + uniqueSuffix + path.extname(file.originalname));
-    }
+    filename: (req, file, cb) => {
+      const unique = `${Date.now()}-${Math.round(Math.random() * 1e9)}`;
+      const prefix = file.fieldname === 'video' ? 'video-' : 'product-';
+      cb(null, `${prefix}${unique}${path.extname(file.originalname)}`);
+    },
   }),
-  limits: {
-    fileSize: 50 * 1024 * 1024, // 50MB max
-  },
+  limits: { fileSize: 50 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
-    if (file.fieldname === 'images') {
-      imageFileFilter(req, file, cb);
-    } else if (file.fieldname === 'video') {
-      videoFileFilter(req, file, cb);
-    } else {
-      cb(new Error('Unexpected field'), false);
-    }
-  }
+    if (file.fieldname === 'images') return imageFileFilter(req, file, cb);
+    if (file.fieldname === 'video') return videoFileFilter(req, file, cb);
+    cb(new Error('Unexpected field'), false);
+  },
 }).fields([
   { name: 'images', maxCount: 5 },
-  { name: 'video', maxCount: 1 }
+  { name: 'video', maxCount: 1 },
 ]);
+
+// Bank slip — single file, image or PDF, max 10 MB
+const uploadBankSlip = multer({
+  storage: slipStorage,
+  limits: { fileSize: 10 * 1024 * 1024 }, // 10 MB
+  fileFilter: slipFileFilter,
+}).single('bankSlip');
 
 module.exports = {
   uploadProductImages,
   uploadProductVideo,
-  uploadProductMedia
+  uploadProductMedia,
+  uploadBankSlip,
 };

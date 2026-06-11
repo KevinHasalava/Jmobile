@@ -11,9 +11,6 @@ const setupSocket = require('./config/socket');
 // Load env vars
 dotenv.config();
 
-// Connect to database
-connectDB();
-
 // Initialize express app
 const app = express();
 const server = http.createServer(app);
@@ -89,6 +86,7 @@ app.use('/api/customers', require('./routes/customerRoutes'));
 app.use('/api/admin', require('./routes/adminRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/chat', require('./routes/chatRoutes'));
+app.use('/api/contact', require('./routes/contactRoutes'));
 app.use('/api', require('./routes/taxonomyRoutes'));
 
 // Root route
@@ -120,12 +118,23 @@ app.use((req, res) => {
   });
 });
 
+// ─── ASYNC IIFE: Await DB connection BEFORE listening ───
 const PORT = process.env.PORT || 5000;
 
-server.listen(PORT, () => {
-  console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
-  console.log(`Socket.io server ready`);
-});
+(async () => {
+  try {
+    // Wait for MongoDB to connect before starting the server
+    await connectDB();
+
+    server.listen(PORT, () => {
+      console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
+      console.log(`Socket.io server ready`);
+    });
+  } catch (error) {
+    console.error(`❌ Failed to start server: ${error.message}`);
+    process.exit(1);
+  }
+})();
 
 // Handle unhandled promise rejections
 process.on('unhandledRejection', (err, promise) => {

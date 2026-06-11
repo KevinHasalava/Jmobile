@@ -58,7 +58,8 @@ const AdminProducts = () => {
   useEffect(() => {
     fetchProducts();
     fetchBrandsAndCategories();
-  }, [selectedBrand, selectedCategory, searchTerm, pagination.currentPage]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedBrand, selectedCategory, searchTerm, pagination.currentPage]); // fetch fns omitted intentionally
 
   const fetchBrandsAndCategories = async () => {
     try {
