@@ -47,7 +47,6 @@ const ProductCard = ({ product }) => {
   }, [product._id, navigate]);
 
   const imageUrl  = useMemo(() => getImageUrl(product.images?.[0] || product.image), [product.images, product.image]);
-  const isLowStock = useMemo(() => product.stock > 0 && product.stock <= 5, [product.stock]);
   const isOutOfStock = product.stock === 0;
 
   const handleAddToCart = useCallback(async (e) => {
