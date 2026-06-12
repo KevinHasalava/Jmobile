@@ -11,6 +11,34 @@ const setupSocket = require('./config/socket');
 // Load env vars
 dotenv.config();
 
+// ─── Shared CORS origin resolver ─────────────────────────────────────────────
+// Does NOT rely on CLIENT_URL being correctly set in Vercel dashboard.
+// Any *.vercel.app domain (preview + prod) is automatically allowed.
+const STATIC_ORIGINS = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  // Add your custom production domain here if you ever use one:
+  // 'https://jmobiles.com',
+];
+
+const corsOriginResolver = (origin, callback) => {
+  // Allow server-to-server / Postman (no origin header)
+  if (!origin) return callback(null, true);
+  // Allow any Vercel preview or production deployment automatically
+  if (origin.endsWith('.vercel.app')) return callback(null, true);
+  // Allow explicitly listed origins
+  if (STATIC_ORIGINS.includes(origin)) return callback(null, true);
+  // Allow CLIENT_URL if it is set and is NOT localhost (guards against the
+  // Vercel dashboard misconfiguration that caused this bug)
+  const clientUrl = process.env.CLIENT_URL;
+  if (clientUrl && !clientUrl.includes('localhost') && origin === clientUrl) {
+    return callback(null, true);
+  }
+  return callback(new Error(`CORS blocked: ${origin}`));
+};
+
 // Initialize express app
 const app = express();
 const server = http.createServer(app);
@@ -18,23 +46,7 @@ const server = http.createServer(app);
 // Initialize Socket.io
 const io = new Server(server, {
   cors: {
-    origin: (origin, callback) => {
-      const allowedOrigins = [
-        'http://localhost:3000',
-        'http://localhost:3001',
-        'http://127.0.0.1:3000',
-        'http://127.0.0.1:3001',
-        'https://jmobile-ten.vercel.app',
-        process.env.CLIENT_URL
-      ].filter(Boolean);
-
-      // Allow requests with no origin (mobile apps, Postman, etc.) or matching Vercel domains
-      if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+    origin: corsOriginResolver,
     credentials: true
   }
 });
@@ -49,25 +61,9 @@ app.set('io', io);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Enable CORS
+// Enable CORS — uses shared resolver defined above
 app.use(cors({
-  origin: (origin, callback) => {
-    const allowedOrigins = [
-      'http://localhost:3000',
-      'http://localhost:3001',
-      'http://127.0.0.1:3000',
-      'http://127.0.0.1:3001',
-      'https://jmobile-ten.vercel.app',
-      process.env.CLIENT_URL
-    ].filter(Boolean);
-
-    // Allow requests with no origin (mobile apps, Postman, etc.) or matching Vercel domains
-    if (!origin || allowedOrigins.includes(origin) || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: corsOriginResolver,
   credentials: true
 }));
 
