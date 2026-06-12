@@ -47,6 +47,80 @@ export const CartProvider = ({ children, userId }) => {
 
   /* ── Cart actions ─────────────────────────────────── */
   const addToCart = useCallback((product, quantity = 1) => {
+    // ── Auth guard: only registered users may add to cart ────────────────
+    // userId is the logged-in user's ID passed from App via CartProvider.
+    // If it is falsy (guest / logged-out), block the action and prompt login.
+    if (!userId) {
+      // Dynamically import toast so CartContext stays free of extra deps at module level
+      import('react-hot-toast').then(({ default: toast }) => {
+        toast.error(
+          (t) => {
+            const dismiss = () => toast.dismiss(t.id);
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                <p style={{ margin: 0, fontWeight: 700, color: '#fff' }}>
+                  🔒 Sign in required
+                </p>
+                <p style={{ margin: 0, fontSize: '13px', color: '#aaa' }}>
+                  Please log in to add items to your cart.
+                </p>
+                <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
+                  <a
+                    href="/login"
+                    onClick={dismiss}
+                    style={{
+                      flex: 1,
+                      textAlign: 'center',
+                      background: 'linear-gradient(135deg,#FF8C00,#FF6600)',
+                      color: '#fff',
+                      padding: '7px 12px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Sign In
+                  </a>
+                  <a
+                    href="/register"
+                    onClick={dismiss}
+                    style={{
+                      flex: 1,
+                      textAlign: 'center',
+                      background: 'transparent',
+                      color: '#FF8C00',
+                      border: '1px solid rgba(255,140,0,0.5)',
+                      padding: '7px 12px',
+                      borderRadius: '8px',
+                      fontWeight: 700,
+                      fontSize: '13px',
+                      textDecoration: 'none',
+                    }}
+                  >
+                    Register
+                  </a>
+                </div>
+              </div>
+            );
+          },
+          {
+            duration: 5000,
+            style: {
+              background: '#1C1C1E',
+              border: '1px solid rgba(255,140,0,0.25)',
+              padding: '14px 16px',
+              maxWidth: '320px',
+            },
+            // suppress the default red ✕ icon
+            icon: null,
+          }
+        );
+      });
+      return; // ← stop here; do NOT add to cart
+    }
+
+    // ── Logged-in user: normal cart add ──────────────────────────────────
     setCart(prev => {
       const id = product._id || product.id;
       const exists = prev.find(i => (i._id || i.id) === id);
@@ -57,7 +131,7 @@ export const CartProvider = ({ children, userId }) => {
       }
       return [...prev, { ...product, quantity }];
     });
-  }, []);
+  }, [userId]);
 
   const removeFromCart = useCallback((productId) => {
     setCart(prev => prev.filter(i => (i._id || i.id) !== productId));

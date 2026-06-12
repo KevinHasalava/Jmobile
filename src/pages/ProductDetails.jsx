@@ -2,12 +2,15 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import api from '../services/api';
 import { useCart } from '../context/CartContext';
+import { useAuth } from '../context/AuthContext';
 import { convertAndFormatPrice, getImageUrl } from '../utils/currency';
 
 const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
+  const { isAuthenticated } = useAuth();
+  const isLoggedIn = isAuthenticated();
   
   const [product, setProduct] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -94,12 +97,20 @@ const ProductDetails = () => {
   }
 
   const handleAddToCart = () => {
+    // addToCart handles the auth guard internally — shows sign-in toast for guests
     addToCart(product, quantity);
-    setAddedToCart(true);
-    setTimeout(() => setAddedToCart(false), 2000);
+    if (isLoggedIn) {
+      setAddedToCart(true);
+      setTimeout(() => setAddedToCart(false), 2000);
+    }
   };
 
   const handleBuyNow = () => {
+    // addToCart handles the auth guard — only navigates to cart for logged-in users
+    if (!isLoggedIn) {
+      addToCart(product, quantity); // triggers sign-in toast
+      return;
+    }
     addToCart(product, quantity);
     navigate('/cart');
   };
@@ -297,21 +308,35 @@ const ProductDetails = () => {
                 <div className="flex space-x-4 mb-6">
                   <button
                     onClick={handleAddToCart}
-                    className="flex-1 bg-primary text-white py-3 px-6 rounded-lg hover:bg-secondary transition-colors font-semibold flex items-center justify-center"
+                    className={`flex-1 py-3 px-6 rounded-lg font-semibold flex items-center justify-center transition-colors ${
+                      isLoggedIn
+                        ? 'bg-primary text-white hover:bg-secondary'
+                        : 'bg-gray-700 text-gray-300 hover:bg-orange-500/80 hover:text-white cursor-pointer'
+                    }`}
                   >
-                    <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"
-                      />
-                    </svg>
-                    {addedToCart ? 'Added!' : 'Add to Cart'}
+                    {isLoggedIn ? (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
+                        </svg>
+                        {addedToCart ? 'Added!' : 'Add to Cart'}
+                      </>
+                    ) : (
+                      <>
+                        <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                        </svg>
+                        Sign in to Add
+                      </>
+                    )}
                   </button>
                   <button
                     onClick={handleBuyNow}
-                    className="flex-1 bg-green-600 text-white py-3 px-6 rounded-lg hover:bg-green-700 transition-colors font-semibold"
+                    className={`flex-1 py-3 px-6 rounded-lg font-semibold transition-colors ${
+                      isLoggedIn
+                        ? 'bg-green-600 text-white hover:bg-green-700'
+                        : 'bg-gray-700 text-gray-300 hover:bg-orange-500/80 hover:text-white cursor-pointer'
+                    }`}
                   >
                     Buy Now
                   </button>
